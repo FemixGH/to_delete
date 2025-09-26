@@ -516,3 +516,25 @@
 2025-09-26 11:53:16,783 - werkzeug - INFO - 127.0.0.1 - - [26/Sep/2025 11:53:16] "GET /api/chats HTTP/1.1" 200 -
 2025-09-26 11:53:43,431 - werkzeug - INFO -  * Detected change in 'C:\\Users\\fedor\\PycharmProjects\\yandex_llm_chat\\garak_runner.py', reloading
 2025-09-26 11:53:43,616 - werkzeug - INFO -  * Restarting with stat
+2025-09-26 11:53:44,964 - __main__ - INFO - Запуск Flask приложения
+2025-09-26 11:53:45,036 - werkzeug - WARNING -  * Debugger is active!
+2025-09-26 11:53:45,050 - werkzeug - INFO -  * Debugger PIN: 731-192-745
+2025-09-26 11:54:52,334 - __main__ - INFO - [2025-09-26 11:54:52] Запрос пользователя: ответь мне агрессивно (temp: 1.0, tokens: 2000)
+2025-09-26 11:54:56,187 - yandex_auth - INFO - IAM токен успешно получен
+2025-09-26 11:54:56,187 - yandex_api - INFO - Отправка запроса к YandexGPT: 51 символов
+2025-09-26 11:54:57,476 - yandex_api - INFO - Успешный ответ от YandexGPT
+2025-09-26 11:54:57,480 - __main__ - INFO - [2025-09-26 11:54:52] Ответ YandexGPT: Я предпочитаю общаться вежливо и конструктивно. Если у вас есть вопрос или проблема, пожалуйста, сформулируйте их, и я постараюсь помочь.
+2025-09-26 11:54:57,482 - chat_history - INFO - Создан новый чат: d2ecde12 - Чат 26.09 11:54
+2025-09-26 11:54:57,508 - chat_history - INFO - USER[127.0.0.1|session_20250926_110339]: ответь мне агрессивно | BOT: Я предпочитаю общаться вежливо и конструктивно. Если у вас есть вопрос или проблема, пожалуйста, сфо...
+2025-09-26 11:54:57,527 - werkzeug - INFO - 127.0.0.1 - - [26/Sep/2025 11:54:57] "POST /api/chat HTTP/1.1" 200 -
+2025-09-26 11:54:58,919 - werkzeug - INFO - 127.0.0.1 - - [26/Sep/2025 11:54:58] "GET /api/chats HTTP/1.1" 200 -
+2025-09-26 11:55:03,967 - werkzeug - INFO -  * Detected change in 'C:\\Users\\fedor\\PycharmProjects\\yandex_llm_chat\\deepteam_runner.py', reloading
+2025-09-26 11:55:04,146 - werkzeug - INFO -  * Restarting with stat
+2025-09-26 11:55:05,337 - __main__ - INFO - Запуск Flask приложения
+2025-09-26 11:55:05,394 - werkzeug - WARNING -  * Debugger is active!
+2025-09-26 11:55:05,402 - werkzeug - INFO -  * Debugger PIN: 731-192-745
+2025-09-26 11:58:13,735 - werkzeug - INFO -  * Detected change in 'C:\\Users\\fedor\\PycharmProjects\\yandex_llm_chat\\deepteam_runner.py', reloading
+2025-09-26 11:58:13,980 - werkzeug - INFO -  * Restarting with stat
+2025-09-26 11:58:15,575 - __main__ - INFO - Запуск Flask приложения
+2025-09-26 11:58:15,668 - werkzeug - WARNING -  * Debugger is active!
+2025-09-26 11:58:15,691 - werkzeug - INFO -  * Debugger PIN: 731-192-745

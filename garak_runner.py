@@ -115,6 +115,7 @@ def main() -> int:
     env['OPENAI_API_KEY'] = args.openai_api_key
     env['OPENAI_API_BASE'] = base_url
     env['OPENAI_BASE'] = base_url
+    env['OPENAI_BASE_URL'] = base_url
 
     # Команда для garak
     garak_cmd = [sys.executable, '-m', 'garak']

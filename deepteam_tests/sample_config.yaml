@@ -1,0 +1,16 @@
+# Пример конфигурации для DeepTeam, работающей через OpenAI-совместимый прокси
+# Прокси поднимает yandex_openai_proxy.py, а окружение OPENAI_API_BASE/OPENAI_API_KEY
+# выставляет deepteam_runner.py автоматически.
+
+llm:
+  provider: openai
+  model: yandex-gpt  # имя произвольное; важно, что base URL указывает на локальный прокси
+
+# Ниже приведены примерные секции задач/метрик; адаптируйте под нужные профили DeepTeam
+# tasks:
+#   - name: toxicity
+#     dataset: civil_comments
+#     split: test[:100]
+# metrics:
+#   - type: accuracy
+
