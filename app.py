@@ -113,13 +113,98 @@ def get_history():
     return jsonify(history)
 
 
+@app.route('/api/chats', methods=['GET'])
+def get_chats():
+    """Получение списка всех чатов"""
+    try:
+        chats = chat_manager.get_chat_list()
+        return jsonify({
+            'chats': chats,
+            'current_chat_id': chat_manager.get_current_chat_id()
+        })
+    except Exception as e:
+        logger.error(f"Ошибка получения списка чатов: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/chats', methods=['POST'])
+def create_chat():
+    """Создание нового чата"""
+    try:
+        data = request.get_json() or {}
+        title = data.get('title', None)
+
+        chat_id = chat_manager.create_new_chat(title)
+        chat_manager.load_chat(chat_id)  # Делаем новый чат активным
+
+        return jsonify({
+            'chat_id': chat_id,
+            'message': 'Новый чат создан'
+        })
+    except Exception as e:
+        logger.error(f"Ошибка создания чата: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/chats/<chat_id>', methods=['GET'])
+def load_chat(chat_id):
+    """Загрузка конкретного чата"""
+    try:
+        success = chat_manager.load_chat(chat_id)
+        if success:
+            history = chat_manager.get_recent_history(100)  # Загружаем больше истории
+            return jsonify({
+                'chat_id': chat_id,
+                'history': history,
+                'message': 'Чат загружен'
+            })
+        else:
+            return jsonify({'error': 'Чат не найден'}), 404
+    except Exception as e:
+        logger.error(f"Ошибка загрузки чата {chat_id}: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/chats/<chat_id>', methods=['DELETE'])
+def delete_chat(chat_id):
+    """Удаление чата"""
+    try:
+        success = chat_manager.delete_chat(chat_id)
+        if success:
+            return jsonify({'message': 'Чат удален'})
+        else:
+            return jsonify({'error': 'Чат не найден'}), 404
+    except Exception as e:
+        logger.error(f"Ошибка удаления чата {chat_id}: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/chats/<chat_id>/rename', methods=['POST'])
+def rename_chat(chat_id):
+    """Переименование чата"""
+    try:
+        data = request.get_json()
+        new_title = data.get('title', '').strip()
+
+        if not new_title:
+            return jsonify({'error': 'Название не может быть пустым'}), 400
+
+        success = chat_manager.rename_chat(chat_id, new_title)
+        if success:
+            return jsonify({'message': 'Чат переименован'})
+        else:
+            return jsonify({'error': 'Чат не найден'}), 404
+    except Exception as e:
+        logger.error(f"Ошибка переименования чата {chat_id}: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/clear')
 def clear_history():
-    """Очистка истории чата"""
-    chat_manager.clear_history()
-    logger.info("История чата очищена")
-    return jsonify({'message': 'История очищена'})
-
+    """Очистка текущего чата"""
+    chat_manager.clear_current_chat()
+    logger.info("Текущий чат очищен")
+    return jsonify({'message': 'Чат очищен'})
 
 @app.route('/api/stats')
 def get_chat_stats():
