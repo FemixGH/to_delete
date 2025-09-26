@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YandexGPT Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            max-height: 60vh;
+            border-bottom: 1px solid #eee;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.8rem;
+            border-radius: 8px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            background-color: #3498db;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .bot-message {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            border-left: 4px solid #3498db;
+        }
+
+        .message-time {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-top: 0.3rem;
+        }
+
+        .input-area {
+            padding: 1rem;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 0.5rem;
+            align-items: end;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            resize: vertical;
+            min-height: 60px;
+            font-family: inherit;
+        }
+
+        .send-btn {
+            padding: 0.8rem 1.5rem;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            height: fit-content;
+        }
+
+        .send-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .send-btn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .control-btn {
+            padding: 0.5rem 1rem;
+            background-color: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .control-btn:hover {
+            background-color: #7f8c8d;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+            color: #7f8c8d;
+        }
+
+        .error {
+            background-color: #e74c3c;
+            color: white;
+            padding: 0.8rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 2rem;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .message {
+                max-width: 95%;
+            }
+
+            .chat-container {
+                margin: 0;
+                height: 100vh;
+                border-radius: 0;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>YandexGPT Chat</h1>
+        <p>Простой веб-интерфейс для общения с YandexGPT</p>
+    </div>
+
+    <div class="chat-container">
+        <div class="chat-messages" id="chatMessages">
+            <div class="empty-state">
+                Начните диалог, отправив сообщение ниже
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            Генерация ответа...
+        </div>
+
+        <div class="input-area">
+            <div class="controls">
+                <button class="control-btn" onclick="clearChat()">Очистить чат</button>
+                <button class="control-btn" onclick="loadHistory()">Загрузить историю</button>
+            </div>
+
+            <div class="input-container">
+                <textarea
+                    id="messageInput"
+                    class="message-input"
+                    placeholder="Введите ваше сообщение здесь..."
+                    rows="2"
+                ></textarea>
+                <button id="sendBtn" class="send-btn" onclick="sendMessage()">Отправить</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const loading = document.getElementById('loading');
+
+        // Отправка сообщения по Enter (Ctrl+Enter для новой строки)
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.ctrlKey && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // Добавляем сообщение пользователя
+            addMessage(message, 'user');
+            messageInput.value = '';
+
+            // Показываем индикатор загрузки
+            showLoading(true);
+            setSendButtonState(false);
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    addMessage(data.response, 'bot', data.timestamp);
+                } else {
+                    addMessage(`Ошибка: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                addMessage(`Ошибка сети: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+                setSendButtonState(true);
+                messageInput.focus();
+            }
+        }
+
+        function addMessage(text, type, timestamp = null) {
+            // Удаляем пустое состояние при первом сообщении
+            const emptyState = chatMessages.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type === 'user' ? 'user-message' : type === 'error' ? 'error' : 'bot-message'}`;
+
+            const messageText = document.createElement('div');
+            messageText.textContent = text;
+            messageDiv.appendChild(messageText);
+
+            if (timestamp || type === 'user') {
+                const timeDiv = document.createElement('div');
+                timeDiv.className = 'message-time';
+                timeDiv.textContent = timestamp || new Date().toLocaleString('ru-RU');
+                messageDiv.appendChild(timeDiv);
+            }
+
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showLoading(show) {
+            loading.style.display = show ? 'block' : 'none';
+            if (show) {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+
+        function setSendButtonState(enabled) {
+            sendBtn.disabled = !enabled;
+            sendBtn.textContent = enabled ? 'Отправить' : 'Отправка...';
+        }
+
+        async function clearChat() {
+            if (confirm('Очистить историю чата?')) {
+                try {
+                    const response = await fetch('/api/clear');
+                    if (response.ok) {
+                        chatMessages.innerHTML = '<div class="empty-state">Начните диалог, отправив сообщение ниже</div>';
+                    }
+                } catch (error) {
+                    console.error('Ошибка очистки чата:', error);
+                }
+            }
+        }
+
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/history');
+                const history = await response.json();
+
+                chatMessages.innerHTML = '';
+
+                if (history.length === 0) {
+                    chatMessages.innerHTML = '<div class="empty-state">История пуста</div>';
+                    return;
+                }
+
+                history.forEach(item => {
+                    addMessage(item.user_message, 'user', item.timestamp);
+                    addMessage(item.bot_response, 'bot', item.timestamp);
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки истории:', error);
+            }
+        }
+
+        // Загружаем историю при загрузке страницы
+        window.addEventListener('load', loadHistory);
+    </script>
+</body>
+</html>
