@@ -393,81 +393,46 @@
         <div class="settings-container" id="settingsContainer">
             <div class="settings-grid">
                 <div class="setting-group">
-                    <div class="setting-label">Температура</div>
+                    <div class="setting-label">🌡️ Температура</div>
                     <input
                         type="range"
-                        id="temperatureSetting"
+                        id="temperatureRange"
                         class="setting-range"
                         min="0"
                         max="1"
                         step="0.1"
-                        value="0.7"
-                        oninput="updateSettingValue('temperature', this.value)"
+                        value="0.6"
+                        oninput="updateTemperature(this.value)"
                     />
-                    <div class="setting-value" id="temperatureValue">0.7</div>
+                    <div class="setting-value" id="temperatureValue">0.6</div>
                     <div class="setting-description">
-                        Уровень креативности ответов. Чем выше значение, тем более креативные и разнообразные ответы.
+                        Креативность ответов: 0.0 = более точные, 1.0 = более креативные
                     </div>
                 </div>
 
                 <div class="setting-group">
-                    <div class="setting-label">Макс. токенов</div>
+                    <div class="setting-label">🔢 Макс. токенов</div>
                     <input
                         type="number"
-                        id="maxTokensSetting"
+                        id="maxTokensInput"
                         class="setting-input"
-                        min="10"
-                        max="1000"
-                        step="10"
-                        value="150"
+                        min="100"
+                        max="8000"
+                        step="100"
+                        value="2000"
+                        oninput="updateMaxTokens(this.value)"
                     />
                     <div class="setting-description">
-                        Максимальное количество токенов в ответе. Один токен примерно соответствует одному слову.
-                    </div>
-                </div>
-
-                <div class="setting-group">
-                    <div class="setting-label">Частота</div>
-                    <input
-                        type="range"
-                        id="frequencySetting"
-                        class="setting-range"
-                        min="0"
-                        max="2"
-                        step="0.1"
-                        value="1"
-                        oninput="updateSettingValue('frequency', this.value)"
-                    />
-                    <div class="setting-value" id="frequencyValue">1</div>
-                    <div class="setting-description">
-                        Контроль разнообразия ответов. Высокие значения могут привести к менее предсказуемым ответам.
-                    </div>
-                </div>
-
-                <div class="setting-group">
-                    <div class="setting-label">Процентное совпадение</div>
-                    <input
-                        type="range"
-                        id="presencePenaltySetting"
-                        class="setting-range"
-                        min="-2"
-                        max="2"
-                        step="0.1"
-                        value="0"
-                        oninput="updateSettingValue('presence_penalty', this.value)"
-                    />
-                    <div class="setting-value" id="presencePenaltyValue">0</div>
-                    <div class="setting-description">
-                        Наказание за использование часто встречающихся фраз. Помогает сделать ответы более разнообразными.
+                        Максимальная длина ответа (100-8000). Примерно 1 токен = 1 слово
                     </div>
                 </div>
             </div>
 
-            <div class="preset-buttons" id="presetButtons">
-                <div class="preset-btn" onclick="setPreset('default')">Стандартные</div>
-                <div class="preset-btn" onclick="setPreset('creative')">Креативные</div>
-                <div class="preset-btn" onclick="setPreset('concise')">Сжатые</div>
-                <div class="preset-btn" onclick="setPreset('detailed')">Подробные</div>
+            <div class="preset-buttons">
+                <button class="preset-btn" onclick="setPreset('balanced')">⚖️ Сбалансированный</button>
+                <button class="preset-btn" onclick="setPreset('creative')">🎨 Креативный</button>
+                <button class="preset-btn" onclick="setPreset('precise')">🎯 Точный</button>
+                <button class="preset-btn" onclick="setPreset('detailed')">📝 Подробный</button>
             </div>
         </div>
     </div>
@@ -482,6 +447,12 @@
         const searchResults = document.getElementById('searchResults');
         const statsContainer = document.getElementById('statsContainer');
         const settingsContainer = document.getElementById('settingsContainer');
+
+        // Текущие настройки генерации
+        let currentSettings = {
+            temperature: 0.6,
+            max_tokens: 2000
+        };
 
         // Отправка сообщения по Enter (Ctrl+Enter для новой строки)
         messageInput.addEventListener('keydown', function(e) {
@@ -509,13 +480,19 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ message: message })
+                    body: JSON.stringify({
+                        message: message,
+                        temperature: currentSettings.temperature,
+                        max_tokens: currentSettings.max_tokens
+                    })
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
                     addMessage(data.response, 'bot', data.timestamp);
+                    // Показываем примененные настройки в консоли для отладки
+                    console.log('Использованные настройки:', data.settings);
                 } else {
                     addMessage(`Ошибка: ${data.error}`, 'error');
                 }
@@ -670,39 +647,61 @@
             document.getElementById('totalBots').textContent = totalBots;
         }
 
-        function updateSettingValue(setting, value) {
-            document.getElementById(`${setting}Value`).textContent = value;
-
-            // Здесь можно добавить код для применения настроек в запросах к API
+        function updateTemperature(value) {
+            currentSettings.temperature = parseFloat(value);
+            document.getElementById('temperatureValue').textContent = value;
+            localStorage.setItem('chatSettings', JSON.stringify(currentSettings));
         }
 
-        function setPreset(preset) {
+        function updateMaxTokens(value) {
+            const tokens = parseInt(value);
+            if (tokens >= 100 && tokens <= 8000) {
+                currentSettings.max_tokens = tokens;
+                localStorage.setItem('chatSettings', JSON.stringify(currentSettings));
+            }
+        }
+
+        function setPreset(presetName) {
             const presets = {
-                default: { temperature: 0.7, max_tokens: 150, frequency: 1, presence_penalty: 0 },
-                creative: { temperature: 0.9, max_tokens: 150, frequency: 1.2, presence_penalty: 0.5 },
-                concise: { temperature: 0.3, max_tokens: 100, frequency: 0.8, presence_penalty: -0.5 },
-                detailed: { temperature: 0.7, max_tokens: 300, frequency: 1, presence_penalty: 0 }
+                balanced: { temperature: 0.6, max_tokens: 2000 },
+                creative: { temperature: 0.9, max_tokens: 3000 },
+                precise: { temperature: 0.2, max_tokens: 1500 },
+                detailed: { temperature: 0.7, max_tokens: 4000 }
             };
 
-            const settings = presets[preset];
-            if (settings) {
-                for (const [key, value] of Object.entries(settings)) {
-                    const input = document.getElementById(`${key}Setting`);
-                    if (input) {
-                        input.value = value;
-                        updateSettingValue(key, value);
-                    }
-                }
+            const preset = presets[presetName];
+            if (preset) {
+                // Обновляем настройки
+                currentSettings = { ...preset };
 
-                // Сбрасываем активные кнопки пресетов
-                const presetButtons = document.querySelectorAll('.preset-btn');
-                presetButtons.forEach(btn => btn.classList.remove('active'));
+                // Обновляем интерфейс
+                document.getElementById('temperatureRange').value = preset.temperature;
+                document.getElementById('temperatureValue').textContent = preset.temperature;
+                document.getElementById('maxTokensInput').value = preset.max_tokens;
 
-                // Выделяем активную кнопку пресета
-                const activeButton = document.querySelector(`.preset-btn[onclick="setPreset('${preset}')"]`);
-                if (activeButton) {
-                    activeButton.classList.add('active');
+                // Сохраняем в localStorage
+                localStorage.setItem('chatSettings', JSON.stringify(currentSettings));
+
+                // Обновляем активную кнопку
+                document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+                event.target.classList.add('active');
+            }
+        }
+
+        function loadSettings() {
+            try {
+                const saved = localStorage.getItem('chatSettings');
+                if (saved) {
+                    const settings = JSON.parse(saved);
+                    currentSettings = { ...currentSettings, ...settings };
+
+                    // Обновляем интерфейс
+                    document.getElementById('temperatureRange').value = currentSettings.temperature;
+                    document.getElementById('temperatureValue').textContent = currentSettings.temperature;
+                    document.getElementById('maxTokensInput').value = currentSettings.max_tokens;
                 }
+            } catch (e) {
+                console.log('Не удалось загрузить сохраненные настройки');
             }
         }
 
@@ -710,6 +709,7 @@
         window.addEventListener('load', () => {
             loadHistory();
             updateStats();
+            loadSettings();
         });
 
         // Наблюдатель за изменениями в чате для обновления статистики
