@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, session
 from yandex_api import yandex_completion, extract_text_from_response
+from chat_history import ChatHistoryManager
 import settings
 
 # Настройка логирования
@@ -21,8 +22,8 @@ app = Flask(__name__)
 app.secret_key = settings.SECRET_KEY
 app.config['DEBUG'] = settings.DEBUG
 
-# Список для хранения истории чата в памяти (в продакшене лучше использовать БД)
-chat_history = []
+# Инициализируем менеджер истории чата
+chat_manager = ChatHistoryManager()
 
 
 @app.route('/')
@@ -38,48 +39,64 @@ def chat():
         data = request.get_json()
         user_message = data.get('message', '').strip()
 
+        # Получаем параметры генерации (с значениями по умолчанию)
+        temperature = data.get('temperature', 0.6)
+        max_tokens = data.get('max_tokens', 2000)
+
+        # Валидация параметров
+        try:
+            temperature = float(temperature)
+            max_tokens = int(max_tokens)
+
+            # Ограничиваем значения
+            temperature = max(0.0, min(1.0, temperature))  # от 0.0 до 1.0
+            max_tokens = max(100, min(8000, max_tokens))    # от 100 до 8000
+        except (ValueError, TypeError):
+            temperature = 0.6
+            max_tokens = 2000
+
         if not user_message:
             return jsonify({'error': 'Сообщение не может быть пустым'}), 400
 
-        # Логируем запрос пользователя
+        # Получаем ID сессии для отслеживания
+        session_id = session.get('session_id')
+        if not session_id:
+            session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            session['session_id'] = session_id
+
+        # Логируем запрос пользователя с параметрами
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        logger.info(f"[{timestamp}] Запрос пользователя: {user_message}")
+        logger.info(f"[{timestamp}] Запрос пользователя: {user_message} (temp: {temperature}, tokens: {max_tokens})")
 
-        # Получаем контекст из истории (последние 5 сообщений для контекста)
-        messages = []
-
-        # Добавляем последние сообщения из истории для контекста
-        recent_history = chat_history[-10:]  # последние 10 сообщений
-        for item in recent_history:
-            messages.append({"role": "user", "text": item['user_message']})
-            messages.append({"role": "assistant", "text": item['bot_response']})
+        # Получаем контекст из истории для модели
+        messages = chat_manager.get_conversation_context(limit=5)
 
         # Добавляем текущее сообщение
         messages.append({"role": "user", "text": user_message})
 
-        # Отправляем запрос к YandexGPT
-        response = yandex_completion(messages)
+        # Отправляем запрос к YandexGPT с настройками
+        response = yandex_completion(messages, max_tokens=max_tokens, temperature=temperature)
         bot_response = extract_text_from_response(response)
 
         # Логируем ответ модели
         logger.info(f"[{timestamp}] Ответ YandexGPT: {bot_response}")
 
-        # Сохраняем в историю
-        chat_entry = {
-            'timestamp': timestamp,
-            'user_message': user_message,
-            'bot_response': bot_response,
-            'raw_response': response  # для отладки
-        }
-        chat_history.append(chat_entry)
-
-        # Ограничиваем размер истории
-        if len(chat_history) > 100:
-            chat_history.pop(0)
+        # Сохраняем в историю через менеджер
+        chat_entry = chat_manager.add_chat_entry(
+            user_message=user_message,
+            bot_response=bot_response,
+            user_id=request.remote_addr,  # IP как идентификатор пользователя
+            session_id=session_id
+        )
 
         return jsonify({
             'response': bot_response,
-            'timestamp': timestamp
+            'timestamp': timestamp,
+            'message_id': chat_entry['id'],
+            'settings': {
+                'temperature': temperature,
+                'max_tokens': max_tokens
+            }
         })
 
     except Exception as e:
@@ -91,19 +108,41 @@ def chat():
 @app.route('/api/history')
 def get_history():
     """Получение истории чата"""
-    # Возвращаем последние 20 сообщений
-    recent_history = chat_history[-20:]
-    return jsonify(recent_history)
+    limit = request.args.get('limit', 20, type=int)
+    history = chat_manager.get_recent_history(limit)
+    return jsonify(history)
 
 
 @app.route('/api/clear')
 def clear_history():
     """Очистка истории чата"""
-    global chat_history
-    chat_history = []
+    chat_manager.clear_history()
     logger.info("История чата очищена")
     return jsonify({'message': 'История очищена'})
 
+
+@app.route('/api/stats')
+def get_chat_stats():
+    """Получение статистики по чату"""
+    stats = chat_manager.get_stats()
+    return jsonify(stats)
+
+
+@app.route('/api/search')
+def search_history():
+    """Поиск по истории чата"""
+    query = request.args.get('q', '').strip()
+    limit = request.args.get('limit', 10, type=int)
+
+    if not query:
+        return jsonify({'error': 'Запрос для поиска не может быть пустым'}), 400
+
+    results = chat_manager.search_history(query, limit)
+    return jsonify({
+        'query': query,
+        'results': results,
+        'count': len(results)
+    })
 
 if __name__ == '__main__':
     # Создаем папку для шаблонов если её нет

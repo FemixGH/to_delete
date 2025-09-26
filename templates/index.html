@@ -119,6 +119,7 @@
             display: flex;
             gap: 0.5rem;
             margin-bottom: 0.5rem;
+            flex-wrap: wrap;
         }
 
         .control-btn {
@@ -133,6 +134,30 @@
 
         .control-btn:hover {
             background-color: #7f8c8d;
+        }
+
+        .control-btn.stats-btn {
+            background-color: #f39c12;
+        }
+
+        .control-btn.stats-btn:hover {
+            background-color: #d68910;
+        }
+
+        .control-btn.search-btn {
+            background-color: #27ae60;
+        }
+
+        .control-btn.search-btn:hover {
+            background-color: #229954;
+        }
+
+        .control-btn.settings-btn {
+            background-color: #9b59b6;
+        }
+
+        .control-btn.settings-btn:hover {
+            background-color: #8e44ad;
         }
 
         .loading {
@@ -155,6 +180,136 @@
             color: #7f8c8d;
             padding: 2rem;
             font-style: italic;
+        }
+
+        .search-container {
+            display: none;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+
+        .stats-container {
+            display: none;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background-color: #e8f4fd;
+            border-radius: 6px;
+            border: 1px solid #b8daff;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+
+        .search-results {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+        }
+
+        .search-result-item {
+            padding: 0.5rem;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+
+        .search-result-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .search-result-preview {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+
+        .settings-container {
+            display: none;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .setting-label {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .setting-input {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .setting-range {
+            margin-bottom: 0.25rem;
+        }
+
+        .setting-value {
+            font-size: 0.8rem;
+            color: #6c757d;
+            text-align: center;
+        }
+
+        .setting-description {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+            line-height: 1.3;
         }
 
         @media (max-width: 768px) {
@@ -192,6 +347,9 @@
             <div class="controls">
                 <button class="control-btn" onclick="clearChat()">Очистить чат</button>
                 <button class="control-btn" onclick="loadHistory()">Загрузить историю</button>
+                <button class="control-btn stats-btn" onclick="showStats()">Статистика</button>
+                <button class="control-btn search-btn" onclick="toggleSearch()">Поиск</button>
+                <button class="control-btn settings-btn" onclick="toggleSettings()">Настройки</button>
             </div>
 
             <div class="input-container">
@@ -204,6 +362,114 @@
                 <button id="sendBtn" class="send-btn" onclick="sendMessage()">Отправить</button>
             </div>
         </div>
+
+        <div class="search-container" id="searchContainer">
+            <input
+                type="text"
+                id="searchInput"
+                class="search-input"
+                placeholder="Поиск по истории..."
+            />
+            <div class="search-results" id="searchResults"></div>
+        </div>
+
+        <div class="stats-container" id="statsContainer">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalMessages">0</div>
+                    <div class="stat-label">Всего сообщений</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalUsers">0</div>
+                    <div class="stat-label">Пользовательских сообщений</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalBots">0</div>
+                    <div class="stat-label">Сообщений бота</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-container" id="settingsContainer">
+            <div class="settings-grid">
+                <div class="setting-group">
+                    <div class="setting-label">Температура</div>
+                    <input
+                        type="range"
+                        id="temperatureSetting"
+                        class="setting-range"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value="0.7"
+                        oninput="updateSettingValue('temperature', this.value)"
+                    />
+                    <div class="setting-value" id="temperatureValue">0.7</div>
+                    <div class="setting-description">
+                        Уровень креативности ответов. Чем выше значение, тем более креативные и разнообразные ответы.
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-label">Макс. токенов</div>
+                    <input
+                        type="number"
+                        id="maxTokensSetting"
+                        class="setting-input"
+                        min="10"
+                        max="1000"
+                        step="10"
+                        value="150"
+                    />
+                    <div class="setting-description">
+                        Максимальное количество токенов в ответе. Один токен примерно соответствует одному слову.
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-label">Частота</div>
+                    <input
+                        type="range"
+                        id="frequencySetting"
+                        class="setting-range"
+                        min="0"
+                        max="2"
+                        step="0.1"
+                        value="1"
+                        oninput="updateSettingValue('frequency', this.value)"
+                    />
+                    <div class="setting-value" id="frequencyValue">1</div>
+                    <div class="setting-description">
+                        Контроль разнообразия ответов. Высокие значения могут привести к менее предсказуемым ответам.
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-label">Процентное совпадение</div>
+                    <input
+                        type="range"
+                        id="presencePenaltySetting"
+                        class="setting-range"
+                        min="-2"
+                        max="2"
+                        step="0.1"
+                        value="0"
+                        oninput="updateSettingValue('presence_penalty', this.value)"
+                    />
+                    <div class="setting-value" id="presencePenaltyValue">0</div>
+                    <div class="setting-description">
+                        Наказание за использование часто встречающихся фраз. Помогает сделать ответы более разнообразными.
+                    </div>
+                </div>
+            </div>
+
+            <div class="preset-buttons" id="presetButtons">
+                <div class="preset-btn" onclick="setPreset('default')">Стандартные</div>
+                <div class="preset-btn" onclick="setPreset('creative')">Креативные</div>
+                <div class="preset-btn" onclick="setPreset('concise')">Сжатые</div>
+                <div class="preset-btn" onclick="setPreset('detailed')">Подробные</div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -211,6 +477,11 @@
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
         const loading = document.getElementById('loading');
+        const searchContainer = document.getElementById('searchContainer');
+        const searchInput = document.getElementById('searchInput');
+        const searchResults = document.getElementById('searchResults');
+        const statsContainer = document.getElementById('statsContainer');
+        const settingsContainer = document.getElementById('settingsContainer');
 
         // Отправка сообщения по Enter (Ctrl+Enter для новой строки)
         messageInput.addEventListener('keydown', function(e) {
@@ -328,8 +599,122 @@
             }
         }
 
-        // Загружаем историю при загрузке страницы
-        window.addEventListener('load', loadHistory);
+        function toggleSearch() {
+            const isVisible = searchContainer.style.display === 'block';
+            searchContainer.style.display = isVisible ? 'none' : 'block';
+            if (!isVisible) {
+                statsContainer.style.display = 'none';
+                settingsContainer.style.display = 'none';
+                searchInput.focus();
+            }
+        }
+
+        function toggleSettings() {
+            const isVisible = settingsContainer.style.display === 'block';
+            settingsContainer.style.display = isVisible ? 'none' : 'block';
+            if (!isVisible) {
+                searchContainer.style.display = 'none';
+                statsContainer.style.display = 'none';
+            }
+        }
+
+        function showStats() {
+            const isVisible = statsContainer.style.display === 'block';
+            statsContainer.style.display = isVisible ? 'none' : 'block';
+            if (!isVisible) {
+                searchContainer.style.display = 'none';
+                settingsContainer.style.display = 'none';
+            }
+        }
+
+        searchInput.addEventListener('input', function() {
+            const query = searchInput.value.trim().toLowerCase();
+            const messages = chatMessages.querySelectorAll('.message:not(.empty-state)');
+            searchResults.innerHTML = '';
+
+            messages.forEach(message => {
+                const text = message.innerText.toLowerCase();
+                if (text.includes(query)) {
+                    const highlighted = message.innerHTML.replace(
+                        new RegExp(`(${query})`, 'gi'),
+                        '<mark>$1</mark>'
+                    );
+                    const preview = message.innerText.length > 50 ? message.innerText.substring(0, 50) + '...' : message.innerText;
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'search-result-item';
+                    resultItem.innerHTML = `<div>${highlighted}</div><div class="search-result-preview">${preview}</div>`;
+                    resultItem.onclick = () => {
+                        message.scrollIntoView({ behavior: 'smooth' });
+                        searchInput.value = '';
+                        searchResults.innerHTML = '';
+                    };
+                    searchResults.appendChild(resultItem);
+                }
+            });
+
+            if (searchResults.innerHTML === '') {
+                const noResults = document.createElement('div');
+                noResults.className = 'search-result-item';
+                noResults.textContent = 'Нет результатов';
+                searchResults.appendChild(noResults);
+            }
+        });
+
+        function updateStats() {
+            const totalMessages = chatMessages.querySelectorAll('.message:not(.empty-state)').length;
+            const totalUsers = chatMessages.querySelectorAll('.message.user-message').length;
+            const totalBots = chatMessages.querySelectorAll('.message.bot-message').length;
+
+            document.getElementById('totalMessages').textContent = totalMessages;
+            document.getElementById('totalUsers').textContent = totalUsers;
+            document.getElementById('totalBots').textContent = totalBots;
+        }
+
+        function updateSettingValue(setting, value) {
+            document.getElementById(`${setting}Value`).textContent = value;
+
+            // Здесь можно добавить код для применения настроек в запросах к API
+        }
+
+        function setPreset(preset) {
+            const presets = {
+                default: { temperature: 0.7, max_tokens: 150, frequency: 1, presence_penalty: 0 },
+                creative: { temperature: 0.9, max_tokens: 150, frequency: 1.2, presence_penalty: 0.5 },
+                concise: { temperature: 0.3, max_tokens: 100, frequency: 0.8, presence_penalty: -0.5 },
+                detailed: { temperature: 0.7, max_tokens: 300, frequency: 1, presence_penalty: 0 }
+            };
+
+            const settings = presets[preset];
+            if (settings) {
+                for (const [key, value] of Object.entries(settings)) {
+                    const input = document.getElementById(`${key}Setting`);
+                    if (input) {
+                        input.value = value;
+                        updateSettingValue(key, value);
+                    }
+                }
+
+                // Сбрасываем активные кнопки пресетов
+                const presetButtons = document.querySelectorAll('.preset-btn');
+                presetButtons.forEach(btn => btn.classList.remove('active'));
+
+                // Выделяем активную кнопку пресета
+                const activeButton = document.querySelector(`.preset-btn[onclick="setPreset('${preset}')"]`);
+                if (activeButton) {
+                    activeButton.classList.add('active');
+                }
+            }
+        }
+
+        // Загружаем историю и обновляем статистику при загрузке страницы
+        window.addEventListener('load', () => {
+            loadHistory();
+            updateStats();
+        });
+
+        // Наблюдатель за изменениями в чате для обновления статистики
+        const chatObserver = new MutationObserver(updateStats);
+        chatObserver.observe(chatMessages, { childList: true });
     </script>
 </body>
 </html>
