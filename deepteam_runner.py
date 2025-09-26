@@ -83,7 +83,7 @@ def main() -> int:
 
     args = parser.parse_args()
 
-    # Проверка наличия пакета deepteam
+    # Проверка наличия пакета deepteam (как маркера установленности)
     if importlib.util.find_spec('deepteam') is None:
         print('Ошибка: пакет "deepteam" не установлен. Установите его (см. репозиторий confident-ai/deepteam) и повторите попытку.', file=sys.stderr)
         return 3
@@ -110,8 +110,12 @@ def main() -> int:
     env['OPENAI_BASE'] = base_url
     env['OPENAI_BASE_URL'] = base_url
 
-    # Команда DeepTeam (через модуль, с прозрачно переданными аргументами)
-    cmd = [sys.executable, '-m', 'deepteam']
+    # Команда DeepTeam: предпочтительно – консольный скрипт 'deepteam'
+    if shutil.which('deepteam'):
+        cmd = ['deepteam']
+    else:
+        # Резервный запуск: некоторые сборки могут поддерживать модульный вызов
+        cmd = [sys.executable, '-m', 'deepteam']
 
     if not args.deepteam_args:
         # Если не передали аргументы — покажем справку deepteam
